@@ -2,10 +2,11 @@
 #include <iomanip>
 #include <windows.h>
 #include <cstdint>
+#include <conio.h>
 
 #define RESET   "\033[0m"
 #define RED     "\033[31m"
-#define GREEN   "\033[32m"
+#define GREEN   "\e[0;92m"
 #define YELLOW  "\033[33m"
 #define BLUE    "\033[34m"
 #define CYAN    "\033[36m"
@@ -16,15 +17,31 @@ double get_cpu_usage_percentage();
 
 void display_ram();
 void display_cpu();
+void move_cursor_topleft();
+const char* get_color(double percent);
 
 void print_header();
 void print_footer();
 
 int main() {
-    print_header();
-    display_ram();
-    display_cpu();
-    print_footer();
+    SetConsoleMode(WriteConsole, ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    system("cls");
+
+    while (true) {
+        if (_kbhit()) {
+            char pressed_key = _getch();
+            if (pressed_key == 'q' || pressed_key == 'Q') {
+                system("cls");
+                break;
+            };
+        };
+
+        move_cursor_topleft();
+        print_header();
+        display_ram();
+        display_cpu();
+        print_footer();
+    }
 
     return 0;
 }
@@ -44,10 +61,8 @@ void display_ram() {
    double used_gb = used_ram/(1024.0 * 1024*1024);
 
    std::cout << std::fixed << std::setprecision(1);
-   std::cout << "[RAM] RAM Usage: " 
-             << std::setw(4) << used_gb << " GB / " 
-             << total_gb << " GB (" 
-             << used_ram_percent << "%)\n";
+   std::cout << "[ CPU ] CPU Usage: " << std::setw(5)
+             << get_color(used_ram_percent) << used_ram_percent << RESET << "%\n";
 }
 
 
@@ -55,7 +70,8 @@ void display_cpu() {
     double cpu_percent = get_cpu_usage_percentage();
 
     std::cout << std::fixed << std::setprecision(1);
-    std::cout << "[CPU] CPU Usage: " << std::setw(4) << cpu_percent << "%\n";
+    std::cout << "[ CPU ] CPU Usage: " << std::setw(5) 
+              << get_color(cpu_percent) << cpu_percent << RESET << "%\n";
 }
 
 uint64_t FILETIME_to_uint64(const FILETIME& ft) {
@@ -88,12 +104,23 @@ double get_cpu_usage_percentage() {
     return cpu_percentage;
 }
 
+void move_cursor_topleft() {
+    COORD target = {0, 0};
+    SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), target);
+}
+
+const char* get_color(double percent) {
+    if (percent <= 50) return GREEN;
+    else if (percent <= 80) return YELLOW;
+    else return RED;
+}
+
 void print_header() {
     std::cout << "==================================\n";
-    std::cout << "       SYSTEM DASHBOARD       \n";
+    std::cout << GREEN << "             THE MEAT        \n" << RESET;
     std::cout << "==================================\n\n";
 }
 
 void print_footer() {
-    std::cout << "\n==================================\n";
+    std::cout << "\n==================================\n\n\n\n";
 }
